@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react'
+import React, { useEffect } from 'react'
 import Conversation from './components/Conversation';
 import Messages from './components/Messages';
 import { useAuth } from './../authContext';
@@ -8,8 +8,12 @@ import { useAuth } from './../authContext';
 const Chat = () => {
 
     const {user,loading}=useAuth();
-    console.log( !loading)
-    console.log(user)
+    if(!user && !loading){
+        window.location.href="/auth/login"
+    }
+    useEffect(()=>{
+
+    },[])
     return (
         <div className="">
             <div className="flex bg-white dark:bg-gray-900">

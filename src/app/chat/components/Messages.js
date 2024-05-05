@@ -7,60 +7,21 @@ import { useAuth } from "@/app/authContext";
 import axios from "axios";
 const Messages = () => {
     const messagesEndRef = useRef(null);
-  const { user, chatId } = useAuth();
-  const [messages, setMessages] = useState([
-    {
-      chatId: 1,
-      senderId: 5,
-      message: "Hello man",
-    },
-    {
-      chatId: 2,
-      senderId: 3,
-      message: "Hey there!",
-    },
-    {
-      chatId: 3,
-      senderId: 5,
-      message: "How are you doing?",
-    },
-    {
-      chatId: 4,
-      senderId: 3,
-      message: "I'm good, thanks! How about you?",
-    },
-    {
-      chatId: 5,
-      senderId: 5,
-      message: "I'm doing alright, just busy with work.",
-    },
-    {
-      chatId: 6,
-      senderId: 3,
-      message: "I understand, work can be overwhelming sometimes.",
-    },
-  ]);
+  const { user, chatId,socket,receiverId } = useAuth();
+  const [messages, setMessages] = useState([ ]);
   const [message, setMessage] = useState("");
-  const [socket, setSocket] = useState(null);
-  useEffect(() => {
-    const socket = io("http://localhost:3000");
-    setSocket(socket);
 
-    socket.emit("register");
-
-    socket.on("privateMessage", (data) => {
-      setMessages((prevMessages) => [...prevMessages, data]);
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
+  useEffect(()=>{
+    if(socket){
+      socket.on("receiveMessage",(data)=>{
+        setMessages({...messages,data})
+      })
+    }
+  })
 
   const getMessagesOfChat = async () => {
     try {
         const response=await axios.get(`http://localhost:3000/api/message/${chatId}`);
-        console.log(response)
         if(response.status===200){
             const realMessages=response.data.data;
             setMessages((prev)=>{
@@ -73,7 +34,6 @@ const Messages = () => {
   };
   const sendMessage = async (e) => {
     e.preventDefault();
-    const to = "receiverUserId";
     const res = await axios.post(`http://localhost:3000/api/message/`, {
       chatId,
       senderId: user.id,
@@ -81,10 +41,10 @@ const Messages = () => {
     });
 
     if (res.status === 200) {
-      socket.emit("privateMessage", { to, message });
+      socket.emit("privateMessage", {  message:res.data.data,to:receiverId });
       setMessages((prevMessages) => [
         ...prevMessages,
-        { senderId: user.id, message },
+        { ...res.data.data },
       ]);
       setMessage((prev) => {
         return "";
@@ -95,6 +55,11 @@ const Messages = () => {
   useEffect(()=>{
     getMessagesOfChat();
   },[chatId])
+  useEffect(()=>{
+    setTimeout(()=>{
+        getMessagesOfChat();
+    },10)
+  })
 
   
 
@@ -163,7 +128,7 @@ const Messages = () => {
             </div>
           </div>
           <div className="w-full flex-grow bg-gray-100 dark:bg-gray-900 my-2 p-2 overflow-y-auto">
-            {messages.map((item,index) => {
+            { messages.length && messages?.map((item,index) => {
               if (item.senderId === user.id) {
                 return (
                   <div className="flex justify-end my-2" key={index}>

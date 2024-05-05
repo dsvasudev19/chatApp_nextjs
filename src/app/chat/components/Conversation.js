@@ -5,9 +5,11 @@ import { useAuth } from '@/app/authContext';
 import axios from 'axios';
 const Conversation = () => {
     const {user,loading,setChatId,chatId}=useAuth();
+    console.log(user)
     const [chats,setChats]=useState([])
     const getUserChats=async()=>{
         const res=await axios.get("http://localhost:3000/api/chat/user/"+user.id)
+        console.log(res)
         if(res.status===200){
             
             setChats((prev)=>{
@@ -16,10 +18,10 @@ const Conversation = () => {
         }
     }
     useEffect(()=>{
-        if(user){
+        if(user && !loading){
             getUserChats()
         }
-    },[])
+    },[user,loading])
     const data = [
         {name:'Rey Jhon',time:'just now', message: 'Hey there! Are you finish creating the chat app?', active: true},
         {name:'Cherry Ann',time:'12:00', message: 'Hello? Are you available tonight?'},
@@ -53,7 +55,8 @@ const Conversation = () => {
                         venom={item.id}
                         active={chatId===item.id}
                         setter={setChatId}
-                        
+                        uone={item.userOne}
+                        utwo={item.userTwo}
                     />
                 ))
             }

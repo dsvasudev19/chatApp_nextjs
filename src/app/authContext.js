@@ -1,25 +1,17 @@
 "use client";
 import { useContext, createContext, useState, useEffect } from "react";
-import axios from "axios";
-import { Router, useRouter } from "next/router";
-import { RSC_ACTION_CLIENT_WRAPPER_ALIAS } from "next/dist/lib/constants";
+import { axiosInstance } from "./../../axiosInstance";
 const AuthContext = createContext(undefined);
-
+import io from 'socket.io-client'
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState({
-    id:3,
-    username: "ds.vasudev",
-    name: "vasudev darse shikari",
-    email: "vasudevds1729@gmail.com",
-    password: "$2b$10$Nqau0ZcMqNO3egKzfok5yeWuBlf79gD9ecnqqEyiPo8wzhGfBOKGe",
-    createdAt: "2024-05-01T14:46:45.000Z",
-    updatedAt: "2024-05-01T14:46:45.000Z",
-    deletedAt: null,
-  });
+  const [user, setUser] = useState({});
   const [isAuthenticated, setIsAuthenticated] = useState("");
   const [loading, setLoading] = useState(false);
   const [chatId,setChatId]=useState("");
-
+  const [receiverId,setReceiverId]=useState("");
+  const [userOne,setUserOne]=useState("");
+  const [userTwo,setUserTwo]=useState("")
+  const [socket,setSocket]=useState();
   const [chat,setChat]=useState({
     name:"",
     userOne:"",
@@ -30,13 +22,14 @@ export const AuthProvider = ({ children }) => {
   const login = async ({ email, password }) => {
     try {
       setLoading(true);
-      const response = await axios.post(
-        "http://localhost:3000/api/auth/login",
+      const response = await axiosInstance.post(
+        "/api/auth/login",
         { email, password }
       );
       if (response.status === 200) {
         setIsAuthenticated(true);
         setLoading(false);
+        localStorage.setItem("token",response.data.data.token)
         window.location.href = "/chat";
       }
     } catch (error) {
@@ -46,8 +39,8 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (values) => {
     try {
-      const response = await axios.post(
-        "http://localhost:3000/api/auth/register",
+      const response = await axiosInstance.post(
+        "/api/auth/register",
         values
       );
       if (response.status === 200) {
@@ -61,11 +54,9 @@ export const AuthProvider = ({ children }) => {
 
   const getUserByToken = async () => {
     try {
-      const response = await axios.get(
-        "http://localhost:3000/api/auth/user/by/token",
-        {
-          withCredentials: true,
-        }
+      const response = await axiosInstance.get(
+        "/api/auth/user/by/token",
+        
       );
       if (response.status === 200) {
         const data = response.data.data;
@@ -79,14 +70,40 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  
+  const instantiateSocket=async()=>{
+      try {
+        const socket=new io("http://localhost:3000")
+        setSocket(socket)
+      } catch (error) {
+        console.log(error);
+      }
+  }
+  const setReceiver=()=>{
+    console.log("setting receiver")
+    if(user.id===userOne){
+      setReceiverId((prev)=>{
+        return userTwo
+      })
+    }else{
+      setReceiverId((prev)=>{
+        return userOne
+      })
+    }
+  }
 
   useEffect(() => {
     getUserByToken();
   }, []);
+  useEffect(()=>{
+    instantiateSocket()
+  },[])
+
+  useEffect(()=>{
+    setReceiver()
+  },[chatId])
   
   return (
-    <AuthContext.Provider value={{ user, loading, login, register,chatId,setChatId }}>
+    <AuthContext.Provider value={{ user, loading, login, register,chatId,setChatId ,socket,setSocket,userOne,setUserOne,userTwo,setUserTwo,receiverId}}>
       {children}
     </AuthContext.Provider>
   );
